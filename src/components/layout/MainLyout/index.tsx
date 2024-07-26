@@ -1,7 +1,9 @@
-import { Container } from '@mui/material'
+import { Button, Container } from '@mui/material'
 import { Outlet } from 'react-router-dom'
 
 import { useUserStore } from '@/services/user'
+import { signOut } from 'firebase/auth'
+import { logout } from '@/firebaseconfig'
 
 /** 全站主 Layout */
 export default function MainLayout(): RC {
@@ -10,8 +12,10 @@ export default function MainLayout(): RC {
 
   return (
     <Container>
-      <p>我是页面 Layout，当前登录用户： {username || '(未登录)'}</p>
+      <p>Hello, {username}</p>
       <Outlet />
+
+      <Button onClick={() => logout()} variant="contained">Logout</Button>
     </Container>
   )
 }

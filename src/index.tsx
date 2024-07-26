@@ -17,7 +17,6 @@ const rootElement = document.getElementById('root')
 const root = ReactDOM.createRoot(rootElement!)
 
 const theme = createTheme(
-  // ↓ 下面这个对象是给 tailwindcss 配合使用配置的，如果不用它，可以删去
   {
     components: {
       MuiPopover: {
@@ -34,8 +33,6 @@ const theme = createTheme(
   },
   zhCN
 )
-
-// ↓ <StyledEngineProvider injectFirst> 组件是为了配合 tailwindcss 使用的，不使用它则可以删去
 
 root.render(
   <React.Fragment>
