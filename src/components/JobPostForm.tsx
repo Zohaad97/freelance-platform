@@ -12,10 +12,17 @@ import {
   Box,
   Autocomplete,
   Chip,
+  Checkbox,
+  FormGroup,
 } from '@mui/material'
+import Grid from '@mui/material/Grid'
 import { Formik, Field, Form, ErrorMessage, FormikProps, FieldProps } from 'formik'
-import React from 'react'
+import React, { useState } from 'react'
 import * as Yup from 'yup'
+
+import MultipleSelectCheckmarks from '@/utils/MultiSelect'
+
+import countries from '../data/countries.json'
 
 interface JobPostFormValues {
   jobTitle: string
@@ -25,6 +32,20 @@ interface JobPostFormValues {
   estimatedDuration: string
   tags: [string]
 }
+const jobType = ['Part Time', 'Full time', 'Contract', 'Internship']
+
+const names = [
+  'Oliver Hansen',
+  'Van Henry',
+  'April Tucker',
+  'Ralph Hubbard',
+  'Omar Alexander',
+  'Carlos Abbott',
+  'Miriam Wagner',
+  'Bradley Wilkerson',
+  'Virginia Andrews',
+  'Kelly Snyder',
+]
 
 const validationSchema = Yup.object({
   jobTitle: Yup.string()
@@ -39,6 +60,7 @@ const validationSchema = Yup.object({
 })
 
 const JobPostForm: React.FC = () => {
+  const [isChecked, setIsChecked] = useState<boolean>(false)
   const initialValues: JobPostFormValues = {
     jobTitle: '',
     jobDescription: '',
@@ -156,7 +178,7 @@ const JobPostForm: React.FC = () => {
             <Field name="tags">
               {({ field }: FieldProps) => (
                 <FormControl component="fieldset">
-                  <FormLabel component="legend">Job Type</FormLabel>
+                  <FormLabel component="legend">Skills</FormLabel>
                   <Autocomplete
                     multiple
                     id="tags-filled"
@@ -170,17 +192,36 @@ const JobPostForm: React.FC = () => {
                       })
                     }
                     renderInput={params => (
-                      <TextField
-                        {...params}
-                        variant="filled"
-                        label="freeSolo"
-                        placeholder="Favorites"
-                      />
+                      <TextField {...params} variant="filled" placeholder="Favorites" />
                     )}
                   />
                 </FormControl>
               )}
             </Field>
+
+            <MultipleSelectCheckmarks width={470} data={names} label={'Select Category'} />
+            <MultipleSelectCheckmarks width={470} data={jobType} label={'Select Job Type'} />
+
+            <Grid container spacing={2} alignItems="center">
+              <Grid item xs={6} container alignItems="center">
+                <MultipleSelectCheckmarks
+                  isDisabled={isChecked}
+                  width={200}
+                  data={countries.map(country => country.name)}
+                  label={'Select Country'}
+                />
+              </Grid>
+              <Grid item xs={6} container>
+                <FormGroup>
+                  <FormControlLabel
+                    control={
+                      <Checkbox checked={isChecked} onChange={() => setIsChecked(!isChecked)} />
+                    }
+                    label="Remote"
+                  />
+                </FormGroup>
+              </Grid>
+            </Grid>
 
             <Button type="submit" variant="contained" color="primary">
               Submit
