@@ -2,7 +2,6 @@ import { Button, Stack } from '@mui/material'
 
 import { useUserStore } from '@/services/user'
 
-/** 用户页面 */
 export default function CheckZustand(): RC {
   const userStore = useUserStore()
 

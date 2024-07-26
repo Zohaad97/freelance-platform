@@ -1,15 +1,16 @@
-import { createBrowserRouter, Navigate, RouteObject, RouterProvider } from 'react-router-dom';
+import { createBrowserRouter, Navigate, RouteObject, RouterProvider } from 'react-router-dom'
 
-import MainLayout from '@/components/layout/MainLyout';
-import FullpageLoading from '@/components/loading/FullpageLoading';
-import HomePage from '@/pages';
-import CheckPage from '@/pages/check';
-import Page404 from '@/pages/fallbacks/page-404';
-import lazy from './lazy';
-import LoginPage from '@/pages/login';
-import AuthCheck from './authcheck';
-import JobPostPage from '@/pages/create-job';
-import JobsListPage from '@/pages/job-list';
+import MainLayout from '@/components/layout/MainLyout'
+import FullpageLoading from '@/components/loading/FullpageLoading'
+import HomePage from '@/pages'
+import CheckPage from '@/pages/check'
+import JobPostPage from '@/pages/create-job'
+import Page404 from '@/pages/fallbacks/page-404'
+import JobsListPage from '@/pages/job-list'
+import LoginPage from '@/pages/login'
+
+import AuthCheck from './authcheck'
+import lazy from './lazy'
 
 export const routerConfig: RouteObject[] = [
   {
@@ -21,8 +22,8 @@ export const routerConfig: RouteObject[] = [
     ),
     children: [
       { index: true, element: <HomePage /> },
-      { path: "job/create", element: <JobPostPage /> },
-      { path: "jobs", element: <JobsListPage /> },
+      { path: 'job/create', element: <JobPostPage /> },
+      { path: 'jobs', element: <JobsListPage /> },
       {
         path: 'check',
         element: <CheckPage />,
@@ -43,8 +44,8 @@ export const routerConfig: RouteObject[] = [
   { path: '/login', element: <LoginPage /> },
 ]
 
-export const router = createBrowserRouter(routerConfig, { basename: process.env.PUBLIC_URL });
+export const router = createBrowserRouter(routerConfig, { basename: process.env.PUBLIC_URL })
 
 export default function RouterEntry() {
-  return <RouterProvider router={router} fallbackElement={<FullpageLoading />} />;
+  return <RouterProvider router={router} fallbackElement={<FullpageLoading />} />
 }
