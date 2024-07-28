@@ -17,11 +17,12 @@ import {
 } from '@mui/material'
 import Grid from '@mui/material/Grid'
 import { Formik, Field, Form, ErrorMessage, FormikProps, FieldProps } from 'formik'
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import * as Yup from 'yup'
 
 import MultipleSelectCheckmarks from '@/utils/MultiSelect'
 
+import categoriesSkillsData from '../data/categoriesSkillsData.json'
 import countries from '../data/countries.json'
 
 interface JobPostFormValues {
@@ -33,19 +34,6 @@ interface JobPostFormValues {
   tags: [string]
 }
 const jobType = ['Part Time', 'Full time', 'Contract', 'Internship']
-
-const names = [
-  'Oliver Hansen',
-  'Van Henry',
-  'April Tucker',
-  'Ralph Hubbard',
-  'Omar Alexander',
-  'Carlos Abbott',
-  'Miriam Wagner',
-  'Bradley Wilkerson',
-  'Virginia Andrews',
-  'Kelly Snyder',
-]
 
 const validationSchema = Yup.object({
   jobTitle: Yup.string()
@@ -61,6 +49,9 @@ const validationSchema = Yup.object({
 
 const JobPostForm: React.FC = () => {
   const [isChecked, setIsChecked] = useState<boolean>(false)
+  const [categories, setCategories] = useState<string[]>([])
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([])
+  const [availableSkills, setAvailableSkills] = useState<string[]>([])
   const initialValues: JobPostFormValues = {
     jobTitle: '',
     jobDescription: '',
@@ -69,13 +60,51 @@ const JobPostForm: React.FC = () => {
     estimatedDuration: '',
     tags: [''],
   }
+  type Category =
+    | 'Web Development'
+    | 'Mobile Development'
+    | 'Data Science & Analytics'
+    | 'Graphic Design'
+    | 'Writing & Translation'
+    | 'Marketing & Sales'
+    | 'Customer Support'
+    | 'Finance & Accounting'
+    | 'Administrative Support'
+    | 'Engineering & Architecture'
+    | 'IT & Networking'
+    | 'Legal'
+
+  // Define the structure of categoriesSkills
+  type CategoriesSkills = {
+    [key: string]: string[]
+  }
+
+  const categoriesSkills: CategoriesSkills = categoriesSkillsData
+  const extractCategoryNames = () => {
+    const categoryNames = Object.keys(categoriesSkills)
+    setCategories(categoryNames)
+  }
+  useEffect(() => {
+    const skills: string[] = selectedCategories.flatMap(
+      category => categoriesSkills[category] || []
+    )
+    setAvailableSkills(skills)
+  }, [selectedCategories])
+
+  useEffect(() => {
+    extractCategoryNames()
+  }, [])
+
+  const handleSelectionChange = (categories: string[]) => {
+    setSelectedCategories(categories)
+  }
 
   return (
     <Formik
       initialValues={initialValues}
       validationSchema={validationSchema}
       onSubmit={values => {
-        console.log(values)
+        // console.log(values)
       }}
     >
       {({ values, setFieldValue, errors }: FormikProps<any>) => (
@@ -175,15 +204,21 @@ const JobPostForm: React.FC = () => {
               )}
             </Field>
 
+            <MultipleSelectCheckmarks
+              data={categories}
+              label={'Select Category'}
+              onSelectionChange={handleSelectionChange}
+            />
             <Field name="tags">
               {({ field }: FieldProps) => (
                 <FormControl component="fieldset">
                   <FormLabel component="legend">Skills</FormLabel>
                   <Autocomplete
                     multiple
+                    disabled={selectedCategories.length === 0}
                     id="tags-filled"
-                    options={top100Films.map(option => option.title)}
-                    defaultValue={[top100Films[13].title]}
+                    options={availableSkills}
+                    // defaultValue={[top100Films[13].title]}
                     freeSolo
                     renderTags={(value: readonly string[], getTagProps) =>
                       value.map((option: string, index: number) => {
@@ -199,14 +234,12 @@ const JobPostForm: React.FC = () => {
               )}
             </Field>
 
-            <MultipleSelectCheckmarks width={470} data={names} label={'Select Category'} />
-            <MultipleSelectCheckmarks width={470} data={jobType} label={'Select Job Type'} />
+            <MultipleSelectCheckmarks data={jobType} label={'Select Job Type'} />
 
             <Grid container spacing={2} alignItems="center">
-              <Grid item xs={6} container alignItems="center">
+              <Grid item xs={6} alignItems="center">
                 <MultipleSelectCheckmarks
                   isDisabled={isChecked}
-                  width={200}
                   data={countries.map(country => country.name)}
                   label={'Select Country'}
                 />

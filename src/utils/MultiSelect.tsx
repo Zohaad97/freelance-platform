@@ -20,9 +20,10 @@ const MenuProps = {
 
 export default function MultipleSelectCheckmarks(props: {
   isDisabled?: boolean
-  width: number
+  width?: number | string
   data: Array<string>
   label: string
+  onSelectionChange?: (value: string[]) => void
 }) {
   const [selectedValue, setSelectedValue] = React.useState<string[]>([])
 
@@ -30,16 +31,22 @@ export default function MultipleSelectCheckmarks(props: {
     const {
       target: { value },
     } = event
-    setSelectedValue(
-      // On autofill we get a stringified value.
-      typeof value === 'string' ? value.split(',') : value
-    )
+    const newSelectedValue = typeof value === 'string' ? value.split(',') : value
+    setSelectedValue(newSelectedValue)
+    if (props.onSelectionChange) {
+      props.onSelectionChange(newSelectedValue)
+    }
   }
 
   return (
     <div>
-      <FormControl sx={{ m: 1, width: props.width }}>
-        <InputLabel id="demo-multiple-checkbox-label">{props.label}</InputLabel>
+      <FormControl
+        fullWidth
+        variant="outlined"
+        margin="normal"
+        style={{ width: props.width || '100%' }}
+      >
+        <InputLabel shrink>{props.label}</InputLabel>
         <Select
           labelId="demo-multiple-checkbox-label"
           id="demo-multiple-checkbox-disabled"
