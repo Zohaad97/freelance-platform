@@ -49,6 +49,7 @@ export default function MultipleSelectCheckmarks(props: {
         fullWidth
         variant="outlined"
         margin="normal"
+        error={props.error}
         style={{ width: props.width || '100%' }}
       >
         <InputLabel shrink>{props.label}</InputLabel>

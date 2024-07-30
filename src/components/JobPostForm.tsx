@@ -53,8 +53,9 @@ const validationSchema = Yup.object({
     .required('Cost range is required'),
   estimatedDuration: Yup.string().required('Estimated duration is required'),
   categories: Yup.array()
-    .min(1, 'At least one category must be selected')
-    .required('This field is required'),
+    .required('This field is required')
+    .min(1, 'At least one category must be selected'),
+
   jobTypes: Yup.array()
     .min(1, 'At least one category must be selected')
     .required('This field is required'),
@@ -71,10 +72,10 @@ const JobPostForm: React.FC = () => {
     jobType: 'fixed',
     costRange: 0,
     estimatedDuration: '',
-    skills: [''],
-    categories: [''],
-    location: [''],
-    jobTypes: [''],
+    skills: [],
+    categories: [],
+    location: [],
+    jobTypes: [],
   }
 
   type CategoriesSkills = {
@@ -112,6 +113,7 @@ const JobPostForm: React.FC = () => {
     >
       {({ values, setFieldValue, errors, touched }: FormikProps<any>) => {
         console.log('Errors', errors)
+        console.log({ values })
 
         return (
           <Form>
@@ -229,6 +231,8 @@ const JobPostForm: React.FC = () => {
                         handleSelectionChange(value)
                         setFieldValue('categories', value)
                       }}
+                      error={!!errors[field.name]}
+                      errorMessage={errors[field.name]?.toString() || ''}
                     />
                     <FormHelperText>
                       <ErrorMessage name="categories" />
