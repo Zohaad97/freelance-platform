@@ -1,3 +1,4 @@
+import { FormHelperText } from '@mui/material'
 import Checkbox from '@mui/material/Checkbox'
 import FormControl from '@mui/material/FormControl'
 import InputLabel from '@mui/material/InputLabel'
@@ -24,8 +25,12 @@ export default function MultipleSelectCheckmarks(props: {
   data: Array<string>
   label: string
   onSelectionChange?: (value: string[]) => void
+  errorMessage?: string
+  error?: boolean
 }) {
   const [selectedValue, setSelectedValue] = React.useState<string[]>([])
+
+  console.log(props.error)
 
   const handleChange = (event: SelectChangeEvent<typeof selectedValue>) => {
     const {
@@ -66,6 +71,8 @@ export default function MultipleSelectCheckmarks(props: {
               </MenuItem>
             ))}
         </Select>
+
+        {props.error && <FormHelperText>{props.error}</FormHelperText>}
       </FormControl>
     </div>
   )
