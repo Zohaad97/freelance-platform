@@ -56,8 +56,15 @@ const validationSchema = Yup.object({
     .required('This field is required')
     .min(1, 'At least one category must be selected'),
 
+  skills: Yup.array()
+    .required('This field is required')
+    .min(1, 'At least one skills must be selected'),
+
   jobTypes: Yup.array()
-    .min(1, 'At least one category must be selected')
+    .min(1, 'At least one Job Type must be selected')
+    .required('This field is required'),
+  location: Yup.array()
+    .min(1, 'At least one Location must be selected')
     .required('This field is required'),
 })
 
@@ -114,6 +121,7 @@ const JobPostForm: React.FC = () => {
       {({ values, setFieldValue, errors, touched }: FormikProps<any>) => {
         console.log('Errors', errors)
         console.log({ values })
+        console.log('Categoris Length', categories.length)
 
         return (
           <Form>
@@ -243,7 +251,10 @@ const JobPostForm: React.FC = () => {
 
               <Field name="skills">
                 {({ field }: FieldProps) => (
-                  <FormControl component="fieldset">
+                  <FormControl
+                    fullWidth
+                    error={selectedCategories.length > 0 && touched.skills && !!errors.skills}
+                  >
                     <FormLabel component="legend">Skills</FormLabel>
                     <Autocomplete
                       multiple
@@ -260,13 +271,35 @@ const JobPostForm: React.FC = () => {
                         <TextField {...params} variant="filled" placeholder="Skills" />
                       )}
                     />
+                    {selectedCategories.length > 0 ? (
+                      <FormHelperText>
+                        <ErrorMessage name="skills" />
+                      </FormHelperText>
+                    ) : (
+                      ''
+                    )}
                   </FormControl>
                 )}
               </Field>
 
               <Field name="jobTypes">
                 {({ field }: FieldProps) => (
-                  <MultipleSelectCheckmarks {...field} data={jobType} label={'Select Job Type'} />
+                  <FormControl fullWidth error={touched.jobTypes && !!errors.jobTypes}>
+                    <MultipleSelectCheckmarks
+                      {...field}
+                      data={jobType}
+                      label={'Select Job Type'}
+                      onSelectionChange={value => {
+                        handleSelectionChange(value)
+                        setFieldValue('Job Type', value)
+                      }}
+                      error={!!errors[field.name]}
+                      errorMessage={errors[field.name]?.toString() || ''}
+                    />
+                    <FormHelperText>
+                      <ErrorMessage name="jobTypes" />
+                    </FormHelperText>
+                  </FormControl>
                 )}
               </Field>
 
@@ -274,18 +307,25 @@ const JobPostForm: React.FC = () => {
                 <Grid item xs={6}>
                   <Field name="location">
                     {({ field }: FieldProps) => (
-                      <MultipleSelectCheckmarks
-                        {...field}
-                        isDisabled={isChecked}
-                        data={countries.map(country => country.name)}
-                        label={'Select Country'}
-                        onSelectionChange={value => {
-                          setFieldValue('location', value)
-                          if (isChecked) {
-                            setIsChecked(false)
-                          }
-                        }}
-                      />
+                      <FormControl fullWidth error={touched.location && !!errors.location}>
+                        <MultipleSelectCheckmarks
+                          {...field}
+                          isDisabled={isChecked}
+                          data={countries.map(country => country.name)}
+                          label={'Select Country'}
+                          onSelectionChange={value => {
+                            setFieldValue('location', value)
+                            if (isChecked) {
+                              setIsChecked(false)
+                            }
+                          }}
+                          error={!!errors[field.name]}
+                          errorMessage={errors[field.name]?.toString() || ''}
+                        />
+                        <FormHelperText>
+                          <ErrorMessage name="location" />
+                        </FormHelperText>
+                      </FormControl>
                     )}
                   </Field>
                 </Grid>
