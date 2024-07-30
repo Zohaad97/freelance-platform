@@ -18,7 +18,7 @@ import {
   FormHelperText,
 } from '@mui/material'
 import { Formik, Field, Form, ErrorMessage, FormikProps, FieldProps } from 'formik'
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import * as Yup from 'yup'
 
 import MultipleSelectCheckmarks from '@/utils/MultiSelect'
@@ -39,34 +39,6 @@ interface JobPostFormValues {
 }
 
 const jobType = ['Part Time', 'Full time', 'Contract', 'Internship']
-
-const validationSchema = Yup.object({
-  jobTitle: Yup.string()
-    .max(800, 'Job title must be at most 800 characters')
-    .required('Job title is required'),
-  jobDescription: Yup.string()
-    .max(2000, 'Job description must be at most 2000 characters')
-    .required('Job description is required'),
-  jobType: Yup.string().required('Job type is required'),
-  costRange: Yup.number()
-    .min(1, 'Cost Range must be greater than 0')
-    .required('Cost range is required'),
-  estimatedDuration: Yup.string().required('Estimated duration is required'),
-  categories: Yup.array()
-    .required('This field is required')
-    .min(1, 'At least one category must be selected'),
-
-  skills: Yup.array()
-    .required('This field is required')
-    .min(1, 'At least one skills must be selected'),
-
-  jobTypes: Yup.array()
-    .min(1, 'At least one Job Type must be selected')
-    .required('This field is required'),
-  location: Yup.array()
-    .min(1, 'At least one Location must be selected')
-    .required('This field is required'),
-})
 
 const JobPostForm: React.FC = () => {
   const [isChecked, setIsChecked] = useState<boolean>(false)
@@ -98,6 +70,40 @@ const JobPostForm: React.FC = () => {
   useEffect(() => {
     extractCategoryNames()
   }, [])
+
+  const validationSchema = useMemo(() => {
+    return Yup.object({
+      jobTitle: Yup.string()
+        .max(800, 'Job title must be at most 800 characters')
+        .required('Job title is required'),
+      jobDescription: Yup.string()
+        .max(2000, 'Job description must be at most 2000 characters')
+        .required('Job description is required'),
+      jobType: Yup.string().required('Job type is required'),
+      costRange: Yup.number()
+        .min(1, 'Cost Range must be greater than 0')
+        .required('Cost range is required'),
+      estimatedDuration: Yup.string().required('Estimated duration is required'),
+      categories: Yup.array()
+        .required('This field is required')
+        .min(1, 'At least one category must be selected'),
+      skills: Yup.array()
+        .of(Yup.string())
+        .when('categories', (_, schema) => {
+          return selectedCategories && selectedCategories.length > 0
+            ? schema
+                .min(1, 'At least one skill must be selected')
+                .required('This field is required')
+            : schema.notRequired()
+        }),
+      jobTypes: Yup.array()
+        .min(1, 'At least one Job Type must be selected')
+        .required('This field is required'),
+      location: Yup.array()
+        .min(1, 'At least one Location must be selected')
+        .required('This field is required'),
+    })
+  }, [selectedCategories])
 
   useEffect(() => {
     const skills: string[] = selectedCategories.flatMap(
@@ -257,6 +263,7 @@ const JobPostForm: React.FC = () => {
                   >
                     <FormLabel component="legend">Skills</FormLabel>
                     <Autocomplete
+                      {...field}
                       multiple
                       disabled={selectedCategories.length === 0}
                       id="tags-filled"
@@ -267,17 +274,16 @@ const JobPostForm: React.FC = () => {
                           <Chip variant="outlined" label={option} {...getTagProps({ index })} />
                         ))
                       }
+                      onChange={(_, newValue: string[]) => {
+                        setFieldValue('skills', newValue)
+                      }}
                       renderInput={params => (
                         <TextField {...params} variant="filled" placeholder="Skills" />
                       )}
                     />
-                    {selectedCategories.length > 0 ? (
-                      <FormHelperText>
-                        <ErrorMessage name="skills" />
-                      </FormHelperText>
-                    ) : (
-                      ''
-                    )}
+                    <FormHelperText>
+                      <ErrorMessage name="skills" />
+                    </FormHelperText>
                   </FormControl>
                 )}
               </Field>
