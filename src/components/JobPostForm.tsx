@@ -41,7 +41,7 @@ interface JobPostFormValues {
 const jobType = ['Part Time', 'Full time', 'Contract', 'Internship']
 
 const JobPostForm: React.FC = () => {
-  const [isChecked, setIsChecked] = useState<boolean>(false)
+  const [isRemoteJob, setIsRemoteJob] = useState<boolean>(false)
   const [categories, setCategories] = useState<string[]>([])
   const [selectedCategories, setSelectedCategories] = useState<string[]>([])
   const [availableSkills, setAvailableSkills] = useState<string[]>([])
@@ -99,11 +99,16 @@ const JobPostForm: React.FC = () => {
       jobTypes: Yup.array()
         .min(1, 'At least one Job Type must be selected')
         .required('This field is required'),
-      location: Yup.array()
-        .min(1, 'At least one Location must be selected')
-        .required('This field is required'),
+
+      location: Yup.array().when('isRemote', (_, schema) => {
+        return !isRemoteJob
+          ? schema
+              .min(1, 'At least one country must be selected')
+              .required('This field is required')
+          : schema.notRequired()
+      }),
     })
-  }, [selectedCategories])
+  }, [selectedCategories, isRemoteJob])
 
   useEffect(() => {
     const skills: string[] = selectedCategories.flatMap(
@@ -296,8 +301,7 @@ const JobPostForm: React.FC = () => {
                       data={jobType}
                       label={'Select Job Type'}
                       onSelectionChange={value => {
-                        handleSelectionChange(value)
-                        setFieldValue('Job Type', value)
+                        setFieldValue('jobTypes', value)
                       }}
                       error={!!errors[field.name]}
                       errorMessage={errors[field.name]?.toString() || ''}
@@ -316,13 +320,13 @@ const JobPostForm: React.FC = () => {
                       <FormControl fullWidth error={touched.location && !!errors.location}>
                         <MultipleSelectCheckmarks
                           {...field}
-                          isDisabled={isChecked}
+                          isDisabled={isRemoteJob}
                           data={countries.map(country => country.name)}
                           label={'Select Country'}
                           onSelectionChange={value => {
                             setFieldValue('location', value)
-                            if (isChecked) {
-                              setIsChecked(false)
+                            if (isRemoteJob) {
+                              setIsRemoteJob(false)
                             }
                           }}
                           error={!!errors[field.name]}
@@ -336,20 +340,25 @@ const JobPostForm: React.FC = () => {
                   </Field>
                 </Grid>
                 <Grid item xs={6}>
-                  <FormGroup>
-                    <FormControlLabel
-                      control={
-                        <Checkbox
-                          checked={isChecked}
-                          onChange={() => {
-                            setIsChecked(!isChecked)
-                            setFieldValue('location', !isChecked)
-                          }}
+                  <Field name="isRemote">
+                    {({ field }: FieldProps) => (
+                      <FormGroup>
+                        <FormControlLabel
+                          control={
+                            <Checkbox
+                              {...field}
+                              checked={isRemoteJob}
+                              onChange={() => {
+                                setIsRemoteJob(!isRemoteJob)
+                                setFieldValue('isRemote', !isRemoteJob)
+                              }}
+                            />
+                          }
+                          label="Remote"
                         />
-                      }
-                      label="Remote"
-                    />
-                  </FormGroup>
+                      </FormGroup>
+                    )}
+                  </Field>
                 </Grid>
               </Grid>
 
