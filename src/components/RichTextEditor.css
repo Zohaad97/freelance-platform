@@ -5,11 +5,3 @@
     box-sizing: border-box;
   }
   
-  /* Maintain border color and remove default focus styles */
-  .rich-text-editor:focus, 
-  .rich-text-editor:focus-visible, 
-  .rich-text-editor:focus-within {
-    border-color: red !important; /* Force the border color to remain red */
-    outline: none !important; /* Remove any default outline */
-  }
-  

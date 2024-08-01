@@ -26,9 +26,8 @@ import {
   MenuDivider,
   MenuSelectHeading,
   RichTextEditor,
-  type RichTextEditorRef,
 } from 'mui-tiptap'
-import { useRef, useState } from 'react'
+import { useState } from 'react'
 import React from 'react'
 import * as Yup from 'yup'
 
@@ -141,13 +140,12 @@ const UserProfileForm: React.FC = () => {
   const [skillInput, setSkillInput] = useState('')
   const [isAboutEmpty, setIsAboutEmpty] = useState(true)
 
-  const rteRef = useRef<RichTextEditorRef>(null)
-
   const HandleChange = ({ editor }: { editor: Editor }) => {
     const content = editor.getText().trim()
-
     setIsAboutEmpty(content.length > 0)
   }
+  console.log(initialValues)
+
   return (
     <Formik
       initialValues={initialValues}
@@ -174,13 +172,13 @@ const UserProfileForm: React.FC = () => {
                 )}
               </Field>
 
-              <Field>
+              <Field name="about">
                 {({ field }: FieldProps) => (
-                  <FormControl fullWidth {...field} error={true}>
+                  <FormControl {...field} fullWidth error={touched.about && !!errors.about}>
                     <RichTextEditor
                       className={!isAboutEmpty ? 'rich-text-editor' : ''}
-                      onUpdate={HandleChange}
                       extensions={[StarterKit]}
+                      onUpdate={HandleChange}
                       renderControls={() => (
                         <MenuControlsContainer>
                           <MenuSelectHeading />
@@ -190,9 +188,11 @@ const UserProfileForm: React.FC = () => {
                         </MenuControlsContainer>
                       )}
                     />
-                    <FormHelperText>
-                      <ErrorMessage name="about" />
-                    </FormHelperText>
+                    {!isAboutEmpty && (
+                      <FormHelperText>
+                        <ErrorMessage name={field.name} />
+                      </FormHelperText>
+                    )}
                   </FormControl>
                 )}
               </Field>
