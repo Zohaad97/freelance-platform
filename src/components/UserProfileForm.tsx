@@ -14,10 +14,25 @@ import {
   Select,
   FormControl,
   InputLabel,
+  FormHelperText,
 } from '@mui/material'
-import { Formik, Field, Form, FieldArray, ErrorMessage, FieldProps } from 'formik'
+import { Editor } from '@tiptap/core'
+import StarterKit from '@tiptap/starter-kit'
+import { Formik, Field, Form, FieldArray, ErrorMessage, FieldProps, FormikProps } from 'formik'
+import {
+  MenuButtonBold,
+  MenuButtonItalic,
+  MenuControlsContainer,
+  MenuDivider,
+  MenuSelectHeading,
+  RichTextEditor,
+  type RichTextEditorRef,
+} from 'mui-tiptap'
+import { useRef, useState } from 'react'
 import React from 'react'
 import * as Yup from 'yup'
+
+import './RichTextEditor.css'
 
 interface Education {
   type: string
@@ -37,7 +52,7 @@ interface jobExperience {
 interface UserProfileFormValues {
   title: string
   about: string
-  skills: string[]
+  skills: string
   jobExperience: jobExperience[]
   education: Education[]
   linkedIn: string
@@ -47,8 +62,11 @@ interface UserProfileFormValues {
 const validationSchema = Yup.object({
   title: Yup.string().required('Title is required'),
   about: Yup.string().required('About is required'),
-  linkedIn: Yup.string().url('Enter a valid URL').required('LinkedIn profile is required'),
+  linkedIn: Yup.string()
+    .matches(/^https:\/\/[a-z]{2,3}\.linkedin\.com\/.*$/gim, 'Enter correct url!')
+    .required('Please enter Url'),
   profilePicture: Yup.string().required('Profile picture is required'),
+  skills: Yup.string().required('Skills is required'),
   education: Yup.array()
     .of(
       Yup.object().shape({
@@ -113,15 +131,23 @@ const UserProfileForm: React.FC = () => {
   const initialValues: UserProfileFormValues = {
     title: '',
     about: '',
-    skills: [],
+    skills: '',
     jobExperience: [],
     education: [],
     linkedIn: '',
     profilePicture: '',
   }
 
-  const [skillInput, setSkillInput] = React.useState('')
+  const [skillInput, setSkillInput] = useState('')
+  const [isAboutEmpty, setIsAboutEmpty] = useState(true)
 
+  const rteRef = useRef<RichTextEditorRef>(null)
+
+  const HandleChange = ({ editor }: { editor: Editor }) => {
+    const content = editor.getText().trim()
+
+    setIsAboutEmpty(content.length > 0)
+  }
   return (
     <Formik
       initialValues={initialValues}
@@ -130,7 +156,7 @@ const UserProfileForm: React.FC = () => {
         console.log(values)
       }}
     >
-      {({ values, setFieldValue, errors }) => {
+      {({ values, setFieldValue, errors, touched }: FormikProps<any>) => {
         console.log(errors)
         return (
           <Form>
@@ -142,55 +168,47 @@ const UserProfileForm: React.FC = () => {
                     label="Title"
                     variant="outlined"
                     fullWidth
-                    helperText={<ErrorMessage name="title" />}
+                    helperText={<ErrorMessage name={field.name} />}
+                    error={!!errors[field.name]}
                   />
                 )}
               </Field>
 
-              <Field name="about">
+              <Field>
+                {({ field }: FieldProps) => (
+                  <FormControl fullWidth {...field} error={true}>
+                    <RichTextEditor
+                      className={!isAboutEmpty ? 'rich-text-editor' : ''}
+                      onUpdate={HandleChange}
+                      extensions={[StarterKit]}
+                      renderControls={() => (
+                        <MenuControlsContainer>
+                          <MenuSelectHeading />
+                          <MenuDivider />
+                          <MenuButtonBold />
+                          <MenuButtonItalic />
+                        </MenuControlsContainer>
+                      )}
+                    />
+                    <FormHelperText>
+                      <ErrorMessage name="about" />
+                    </FormHelperText>
+                  </FormControl>
+                )}
+              </Field>
+
+              <Field name="skills">
                 {({ field }: FieldProps) => (
                   <TextField
                     {...field}
-                    label="About"
-                    variant="outlined"
-                    fullWidth
-                    multiline
-                    rows={4}
-                    helperText={<ErrorMessage name="about" />}
-                  />
-                )}
-              </Field>
-
-              <Box>
-                <Typography variant="subtitle1">Skills</Typography>
-                <Box display="flex" flexDirection="row" gap={1} flexWrap="wrap">
-                  {values.skills.map((skill, index) => (
-                    <Chip
-                      key={index}
-                      label={skill}
-                      onDelete={() => {
-                        const newSkills = values.skills.filter((_, i) => i !== index)
-                        setFieldValue('skills', newSkills)
-                      }}
-                      deleteIcon={<Delete />}
-                    />
-                  ))}
-                  <TextField
-                    value={skillInput}
-                    onChange={e => setSkillInput(e.target.value)}
-                    onKeyDown={e => {
-                      if (e.key === 'Enter' && skillInput.trim()) {
-                        setFieldValue('skills', [...values.skills, skillInput.trim()])
-                        setSkillInput('')
-                        e.preventDefault()
-                      }
-                    }}
                     label="Add skill"
                     variant="outlined"
                     size="small"
+                    helperText={<ErrorMessage name={field.name} />}
+                    error={!!errors[field.name]}
                   />
-                </Box>
-              </Box>
+                )}
+              </Field>
 
               <Field name="linkedIn">
                 {({ field }: FieldProps) => (
@@ -199,7 +217,8 @@ const UserProfileForm: React.FC = () => {
                     label="LinkedIn Profile"
                     variant="outlined"
                     fullWidth
-                    helperText={<ErrorMessage name="linkedIn" />}
+                    helperText={<ErrorMessage name={field.name} />}
+                    error={!!errors[field.name]}
                   />
                 )}
               </Field>
@@ -243,7 +262,7 @@ const UserProfileForm: React.FC = () => {
                 {({ push, remove, replace }) => (
                   <Box display="flex" flexDirection="column" gap={1}>
                     <Typography variant="subtitle1">Education</Typography>
-                    {values.education.map((education, index) => {
+                    {values.education.map((education: Education, index: number) => {
                       if (education.isEditing) {
                         return (
                           <EducationForm
@@ -285,7 +304,7 @@ const UserProfileForm: React.FC = () => {
                 {({ push, remove, replace }) => (
                   <Box display="flex" flexDirection="column" gap={1}>
                     <Typography variant="subtitle1">Job Experience</Typography>
-                    {values.jobExperience.map((jobExperience, index) => {
+                    {values.jobExperience.map((jobExperience: jobExperience, index: number) => {
                       if (jobExperience.isEditing) {
                         return (
                           <JobExperienceForm
@@ -483,7 +502,7 @@ const JobExperienceForm: React.FC<JobExperienceFormProps> = ({
       {({ field }: FieldProps) => (
         <TextField
           {...field}
-          label="position"
+          label="Position"
           variant="outlined"
           fullWidth
           error={Boolean(errorMessages[key]?.position)}
