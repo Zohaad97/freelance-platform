@@ -26,12 +26,19 @@ interface Education {
   toYear: string
   isEditing: boolean
 }
+interface jobExperience {
+  company: string
+  position: string
+  fromYear: string
+  toYear: string
+  isEditing: boolean
+}
 
 interface UserProfileFormValues {
   title: string
   about: string
   skills: string[]
-  jobExperience: string
+  jobExperience: jobExperience[]
   education: Education[]
   linkedIn: string
   profilePicture: string
@@ -40,7 +47,6 @@ interface UserProfileFormValues {
 const validationSchema = Yup.object({
   title: Yup.string().required('Title is required'),
   about: Yup.string().required('About is required'),
-  jobExperience: Yup.string().required('Job experience is required'),
   linkedIn: Yup.string().url('Enter a valid URL').required('LinkedIn profile is required'),
   profilePicture: Yup.string().required('Profile picture is required'),
   education: Yup.array()
@@ -72,6 +78,35 @@ const validationSchema = Yup.object({
     )
     .required('Education is required')
     .min(1, 'At least one education entry is required'),
+  jobExperience: Yup.array()
+    .of(
+      Yup.object().shape({
+        company: Yup.string().required('company is required'),
+        position: Yup.string().required('position is required'),
+        fromYear: Yup.number()
+          .typeError('Year must be a number')
+          .integer('Year must be an integer')
+          .min(1900, 'Year must be between 1900 and 2100')
+          .max(2100, 'Year must be between 1900 and 2100')
+          .required('Year is required'),
+        toYear: Yup.number()
+          .typeError('Year must be a number')
+          .integer('Year must be an integer')
+          .min(1900, 'Year must be between 1900 and 2100')
+          .max(2100, 'Year must be between 1900 and 2100')
+          .required('Year is required')
+          .test(
+            'is-greater',
+            'To Year must be greater than or equal to From Year',
+            function (value) {
+              const { fromYear } = this.parent
+              return value >= fromYear
+            }
+          ),
+      })
+    )
+    .required('Job Experience is required')
+    .min(1, 'At least one Job Experience entry is required'),
 })
 
 const UserProfileForm: React.FC = () => {
@@ -79,7 +114,7 @@ const UserProfileForm: React.FC = () => {
     title: '',
     about: '',
     skills: [],
-    jobExperience: '',
+    jobExperience: [],
     education: [],
     linkedIn: '',
     profilePicture: '',
@@ -156,18 +191,6 @@ const UserProfileForm: React.FC = () => {
                   />
                 </Box>
               </Box>
-
-              <Field name="jobExperience">
-                {({ field }: FieldProps) => (
-                  <TextField
-                    {...field}
-                    label="Job Experience"
-                    variant="outlined"
-                    fullWidth
-                    helperText={<ErrorMessage name="jobExperience" />}
-                  />
-                )}
-              </Field>
 
               <Field name="linkedIn">
                 {({ field }: FieldProps) => (
@@ -256,6 +279,51 @@ const UserProfileForm: React.FC = () => {
                 )}
               </FieldArray>
 
+              {/* Job Experience Form */}
+
+              <FieldArray name="jobExperience">
+                {({ push, remove, replace }) => (
+                  <Box display="flex" flexDirection="column" gap={1}>
+                    <Typography variant="subtitle1">Job Experience</Typography>
+                    {values.jobExperience.map((jobExperience, index) => {
+                      if (jobExperience.isEditing) {
+                        return (
+                          <JobExperienceForm
+                            key={index}
+                            jobExperience={jobExperience}
+                            index={index}
+                            errorMessages={
+                              errors.jobExperience
+                                ? (errors.jobExperience as unknown as jobExperience[])
+                                : []
+                            }
+                            onSubmit={v => {
+                              replace(index, v)
+                            }}
+                          />
+                        )
+                      }
+
+                      // Job Experience Summary
+                      return (
+                        <JobExperienceSummary
+                          jobExperience={jobExperience}
+                          onEdit={() => replace(index, { ...jobExperience, isEditing: true })}
+                          onDelete={() => remove(index)}
+                        />
+                      )
+                    })}
+                    <Button
+                      variant="contained"
+                      color="primary"
+                      onClick={() => push({ company: '', position: '', year: '', isEditing: true })}
+                    >
+                      Add Job Experience
+                    </Button>
+                  </Box>
+                )}
+              </FieldArray>
+
               <Button type="submit" variant="contained" color="primary">
                 Submit
               </Button>
@@ -277,11 +345,23 @@ interface EducationSummaryProps {
   onDelete: () => void
 }
 
+interface JobExperienceSummaryProps {
+  jobExperience: jobExperience
+  onEdit: () => void
+  onDelete: () => void
+}
+
 interface EducationFormProps {
   education: Education
   onSubmit: (v: Education) => void
   index: number
   errorMessages: Education[]
+}
+interface JobExperienceFormProps {
+  jobExperience: jobExperience
+  onSubmit: (v: jobExperience) => void
+  index: number
+  errorMessages: jobExperience[]
 }
 
 const EducationForm: React.FC<EducationFormProps> = ({
@@ -378,6 +458,102 @@ const EducationSummary: React.FC<EducationSummaryProps> = ({ education, onEdit, 
   )
 }
 
+const JobExperienceForm: React.FC<JobExperienceFormProps> = ({
+  jobExperience,
+  index: key,
+  onSubmit,
+  errorMessages,
+}) => (
+  <Box key={key} display="flex" flexDirection="column" gap={2}>
+    <Field name={`jobExperience[${key}].company`}>
+      {({ field }: FieldProps) => (
+        <FormControl fullWidth variant="outlined">
+          <TextField
+            {...field}
+            label="Company Name"
+            variant="outlined"
+            fullWidth
+            error={Boolean(errorMessages[key]?.company)}
+            helperText={<ErrorMessage name={field.name} />}
+          />
+        </FormControl>
+      )}
+    </Field>
+    <Field name={`jobExperience[${key}].position`}>
+      {({ field }: FieldProps) => (
+        <TextField
+          {...field}
+          label="position"
+          variant="outlined"
+          fullWidth
+          error={Boolean(errorMessages[key]?.position)}
+          helperText={<ErrorMessage name={field.name} />}
+        />
+      )}
+    </Field>
+    <Field name={`jobExperience[${key}].fromYear`}>
+      {({ field }: FieldProps) => (
+        <TextField
+          {...field}
+          label="From Year"
+          type="number"
+          variant="outlined"
+          fullWidth
+          error={Boolean(errorMessages[key]?.fromYear)}
+          helperText={<ErrorMessage name={field.name} />}
+        />
+      )}
+    </Field>
+    <Field name={`jobExperience[${key}].toYear`}>
+      {({ field }: FieldProps) => (
+        <TextField
+          {...field}
+          label="To Year"
+          type="number"
+          variant="outlined"
+          fullWidth
+          error={Boolean(errorMessages[key]?.toYear)}
+          helperText={<ErrorMessage name={field.name} />}
+        />
+      )}
+    </Field>
+    <Button
+      type="submit"
+      variant="contained"
+      color="primary"
+      disabled={Boolean(errorMessages.length > 0)}
+      onClick={() => onSubmit({ ...jobExperience, isEditing: false })}
+    >
+      Submit
+    </Button>
+  </Box>
+)
+
+const JobExperienceSummary: React.FC<JobExperienceSummaryProps> = ({
+  jobExperience,
+  onEdit,
+  onDelete,
+}) => (
+  <Paper elevation={2} sx={{ padding: 2, marginBottom: 2 }}>
+    <Stack direction="row" alignItems="center" justifyContent="space-between">
+      <Box>
+        <Typography variant="subtitle1">{jobExperience.company}</Typography>
+        <Typography variant="body1">{jobExperience.position}</Typography>
+        <Typography variant="body2" color="textSecondary">
+          {jobExperience.fromYear} - {jobExperience.toYear}
+        </Typography>
+      </Box>
+      <Box>
+        <IconButton color="primary" onClick={onEdit}>
+          <Edit />
+        </IconButton>
+        <IconButton color="secondary" onClick={onDelete}>
+          <Delete />
+        </IconButton>
+      </Box>
+    </Stack>
+  </Paper>
+)
 const UserProfilePage: React.FC = () => {
   return (
     <Container maxWidth="sm">
