@@ -1,5 +1,6 @@
 import { createBrowserRouter, Navigate, RouteObject, RouterProvider } from 'react-router-dom'
 
+import UserProfilePage from '@/components/UserProfileForm'
 import MainLayout from '@/components/layout/MainLyout'
 import FullpageLoading from '@/components/loading/FullpageLoading'
 import HomePage from '@/pages'
@@ -23,6 +24,7 @@ export const routerConfig: RouteObject[] = [
     children: [
       { index: true, element: <HomePage /> },
       { path: 'job/create', element: <JobPostPage /> },
+      { path: 'profile/me', element: <UserProfilePage /> },
       { path: 'jobs', element: <JobsListPage /> },
       {
         path: 'check',
