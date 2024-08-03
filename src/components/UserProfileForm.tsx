@@ -1,4 +1,6 @@
+import styled from '@emotion/styled'
 import { Add, Delete, Description, Edit } from '@mui/icons-material'
+import CloudUploadIcon from '@mui/icons-material/CloudUpload'
 import {
   TextField,
   Button,
@@ -16,6 +18,12 @@ import {
   InputLabel,
   FormHelperText,
   Grid,
+  Input,
+  ImageList,
+  ImageListItem,
+  Card,
+  CardMedia,
+  CardActions,
 } from '@mui/material'
 import { Editor } from '@tiptap/core'
 import StarterKit from '@tiptap/starter-kit'
@@ -57,7 +65,7 @@ interface jobExperience {
   toYear: string
   isEditing: boolean
 }
-interface Projects {
+interface Project {
   title: string
   description: string
   images: string[]
@@ -70,7 +78,7 @@ interface UserProfileFormValues {
   skills: string
   jobExperience: jobExperience[]
   education: Education[]
-  projects: Projects[]
+  projects: Project[]
   linkedIn: string
   profilePicture: string
 }
@@ -182,7 +190,7 @@ const UserProfileForm: React.FC = () => {
       }}
     >
       {({ values, setFieldValue, errors, touched }: FormikProps<any>) => {
-        console.log(errors)
+        console.log({ errors, values })
         return (
           <Form>
             <Box display="flex" flexDirection="column" gap={2} p={2}>
@@ -376,15 +384,15 @@ const UserProfileForm: React.FC = () => {
                 {({ push, remove, replace }) => (
                   <Box display="flex" flexDirection="column" gap={1}>
                     <Typography variant="subtitle1">Projects</Typography>
-                    {values.projects.map((projects: Projects, index: number) => {
-                      if (projects.isEditing) {
+                    {values.projects.map((project: Project, index: number) => {
+                      if (project.isEditing) {
                         return (
                           <ProjectForm
                             key={index}
-                            projects={projects}
+                            project={project}
                             index={index}
                             errorMessages={
-                              errors.projects ? (errors.projects as unknown as Projects[]) : []
+                              errors.projects ? (errors.projects as unknown as Project[]) : []
                             }
                             onSubmit={v => {
                               replace(index, v)
@@ -396,8 +404,8 @@ const UserProfileForm: React.FC = () => {
                       // Project Summary
                       return (
                         <ProjectSummary
-                          projects={projects}
-                          onEdit={() => replace(index, { ...projects, isEditing: true })}
+                          projects={project}
+                          onEdit={() => replace(index, { ...project, isEditing: true })}
                           onDelete={() => remove(index)}
                         />
                       )
@@ -436,7 +444,7 @@ interface EducationSummaryProps {
   onDelete: () => void
 }
 interface ProjectSummaryProps {
-  projects: Projects
+  projects: Project
   onEdit: () => void
   onDelete: () => void
 }
@@ -461,10 +469,10 @@ interface JobExperienceFormProps {
 }
 
 interface ProjectFormProps {
-  projects: Projects
-  onSubmit: (v: Projects) => void
+  project: Project
+  onSubmit: (v: Project) => void
   index: number
-  errorMessages: Projects[]
+  errorMessages: Project[]
 }
 
 const EducationForm: React.FC<EducationFormProps> = ({
@@ -537,107 +545,151 @@ const EducationForm: React.FC<EducationFormProps> = ({
   </Box>
 )
 
+const VisuallyHiddenInput = styled('input')({
+  clip: 'rect(0 0 0 0)',
+  clipPath: 'inset(50%)',
+  height: 1,
+  overflow: 'hidden',
+  position: 'absolute',
+  bottom: 0,
+  left: 0,
+  whiteSpace: 'nowrap',
+  width: 1,
+})
+
+interface ImageCardType {
+  image: string
+  onEdit: (event: React.ChangeEvent<HTMLInputElement>) => void
+  onDelete: () => void
+}
+
+const ImageCard = ({ image, onEdit, onDelete }: ImageCardType) => (
+  <Card sx={{ margin: 2, width: 120, height: 'auto' }}>
+    <CardMedia component="img" height="140" image={image} alt="Image" />
+    <CardActions>
+      <Button component="label" role={undefined} tabIndex={-1} startIcon={<Edit />}>
+        <VisuallyHiddenInput onChange={event => onEdit(event)} itemType="image/*" type="file" />
+      </Button>
+      <IconButton aria-label="delete" onClick={onDelete}>
+        <Delete />
+      </IconButton>
+    </CardActions>
+  </Card>
+)
+
 const ProjectForm: React.FC<ProjectFormProps> = ({
-  projects,
+  project,
   index: key,
   onSubmit,
   errorMessages,
-}) => (
-  <Box key={key} display="flex" flexDirection="column" gap={2}>
-    <Field name={`projects[${key}].title`}>
-      {({ field }: FieldProps) => (
-        <TextField
-          {...field}
-          label="Title"
-          variant="outlined"
-          fullWidth
-          error={Boolean(errorMessages[key]?.title)}
-          helperText={<ErrorMessage name={field.name} />}
-        />
-      )}
-    </Field>
-    <Field name={`projects[${key}].description`}>
-      {({ field }: FieldProps) => (
-        <TextField
-          {...field}
-          label="Description"
-          variant="outlined"
-          multiline
-          rows={4}
-          fullWidth
-          error={Boolean(errorMessages[key]?.description)}
-          helperText={<ErrorMessage name={field.name} />}
-        />
-      )}
-    </Field>
-    {/* <ImageUploadForm /> */}
+}) => {
+  const handleFileChange = (
+    event: React.ChangeEvent<HTMLInputElement>,
+    push: (obj: string) => void
+  ) => {
+    const files = event.currentTarget.files
+    if (files) {
+      const fileArray = Array.from(files)
+      const previewUrls = fileArray.map(file => URL.createObjectURL(file))
+      previewUrls.forEach(url => push(url))
+    }
+  }
 
-    <FieldArray name="images">
-      {({ push, remove, replace }) => (
-        <FormControl fullWidth variant="outlined">
-          <Field name={`projects[${key}].images`}>
-            <label htmlFor={`upload-${key}`}>
-              <Button variant="contained" component="span">
-                Upload Images
-              </Button>
-              <input
-                id={`upload-${key}`}
-                type="file"
-                multiple
-                hidden
-                onChange={event => console.log(event)}
-              />
-            </label>
+  const handleEdit = (
+    event: React.ChangeEvent<HTMLInputElement>,
+    replace: (obj: string) => void
+  ) => {
+    const files = event.currentTarget.files
+    if (files) {
+      const fileArray = Array.from(files)
+      const previewUrls = fileArray.map(file => URL.createObjectURL(file))
+      previewUrls.forEach(url => replace(url))
+    }
+  }
+  return (
+    <Box key={key} display="flex" flexDirection="column" gap={2}>
+      <Field name={`projects[${key}].title`}>
+        {({ field }: FieldProps) => (
+          <TextField
+            {...field}
+            label="Title"
+            variant="outlined"
+            fullWidth
+            error={Boolean(errorMessages[key]?.title)}
+            helperText={<ErrorMessage name={field.name} />}
+          />
+        )}
+      </Field>
+      <Field name={`projects[${key}].description`}>
+        {({ field }: FieldProps) => (
+          <TextField
+            {...field}
+            label="Description"
+            variant="outlined"
+            multiline
+            rows={4}
+            fullWidth
+            error={Boolean(errorMessages[key]?.description)}
+            helperText={<ErrorMessage name={field.name} />}
+          />
+        )}
+      </Field>
+      {/* <ImageUploadForm /> */}
 
-            {formik.errors.images && formik.touched.images ? (
-              Array.isArray(formik.errors.images) ? (
-                formik.errors.images.map((error, index) => (
-                  <Typography color="error" key={index}>
-                    {typeof error === 'string' ? error : 'Invalid file'}
-                  </Typography>
-                ))
-              ) : (
-                <Typography color="error">{formik.errors.images}</Typography>
-              )
-            ) : null}
-            <Grid container spacing={2} mt={2}>
-              {projects.images.map((preview, index: number) => (
-                <Grid item key={index}>
-                  <img
-                    src={preview}
-                    alt={`Preview ${index}`}
-                    style={{ width: 100, height: 100, objectFit: 'cover' }}
+      <FieldArray name={`projects[${key}].images`}>
+        {({ push, remove, replace }) => (
+          <>
+            <ImageList sx={{ width: 'auto', height: 'auto' }} cols={3}>
+              {project.images.map((preview, index: number) => (
+                <ImageListItem key={index}>
+                  <ImageCard
+                    image={preview}
+                    onDelete={() => remove(index)}
+                    onEdit={event => handleEdit(event, v => replace(index, v))}
                   />
-                  <Button
-                    variant="contained"
-                    color="secondary"
-                    onClick={() => {
-                      remove(index)
-                    }}
-                  >
-                    Remove
-                  </Button>
-                </Grid>
+                </ImageListItem>
               ))}
-            </Grid>
-          </Field>
-        </FormControl>
-      )}
-    </FieldArray>
+            </ImageList>
 
-    <ErrorMessage name="images" />
+            <Field name={`projects[${key}].upload-image`}>
+              {({ field }: FieldProps) => (
+                <FormControl fullWidth variant="outlined">
+                  <Button
+                    {...field}
+                    component="label"
+                    role={undefined}
+                    variant="contained"
+                    tabIndex={-1}
+                    startIcon={<CloudUploadIcon />}
+                  >
+                    Upload file
+                    <VisuallyHiddenInput
+                      onChange={event => handleFileChange(event, push)}
+                      multiple
+                      itemType="image/*"
+                      type="file"
+                    />
+                  </Button>
+                </FormControl>
+              )}
+            </Field>
+          </>
+        )}
+      </FieldArray>
 
-    <Button
-      type="submit"
-      variant="contained"
-      color="primary"
-      disabled={Boolean(errorMessages.length > 0)}
-      onClick={() => onSubmit({ ...projects, isEditing: false })}
-    >
-      Submit
-    </Button>
-  </Box>
-)
+
+      <Button
+        type="submit"
+        variant="contained"
+        color="primary"
+        disabled={Boolean(errorMessages.length > 0)}
+        onClick={() => onSubmit({ ...project, isEditing: false })}
+      >
+        Submit
+      </Button>
+    </Box>
+  )
+}
 
 const EducationSummary: React.FC<EducationSummaryProps> = ({ education, onEdit, onDelete }) => {
   return (
