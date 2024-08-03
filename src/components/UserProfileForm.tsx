@@ -1,4 +1,4 @@
-import { Add, Delete, Edit } from '@mui/icons-material'
+import { Add, Delete, Description, Edit } from '@mui/icons-material'
 import {
   TextField,
   Button,
@@ -15,10 +15,20 @@ import {
   FormControl,
   InputLabel,
   FormHelperText,
+  Grid,
 } from '@mui/material'
 import { Editor } from '@tiptap/core'
 import StarterKit from '@tiptap/starter-kit'
-import { Formik, Field, Form, FieldArray, ErrorMessage, FieldProps, FormikProps } from 'formik'
+import {
+  Formik,
+  Field,
+  Form,
+  FieldArray,
+  ErrorMessage,
+  FieldProps,
+  FormikProps,
+  useFormik,
+} from 'formik'
 import {
   MenuButtonBold,
   MenuButtonItalic,
@@ -47,6 +57,12 @@ interface jobExperience {
   toYear: string
   isEditing: boolean
 }
+interface Projects {
+  title: string
+  description: string
+  images: string[]
+  isEditing: boolean
+}
 
 interface UserProfileFormValues {
   title: string
@@ -54,6 +70,7 @@ interface UserProfileFormValues {
   skills: string
   jobExperience: jobExperience[]
   education: Education[]
+  projects: Projects[]
   linkedIn: string
   profilePicture: string
 }
@@ -124,6 +141,16 @@ const validationSchema = Yup.object({
     )
     .required('Job Experience is required')
     .min(1, 'At least one Job Experience entry is required'),
+  projects: Yup.array()
+    .of(
+      Yup.object().shape({
+        title: Yup.string().required('Title is required'),
+        description: Yup.string().required('Description is required'),
+        images: Yup.array().required('Images is required').min(1, 'At least one Image is required'),
+      })
+    )
+    .required('Job Experience is required')
+    .min(1, 'At least one Job Experience entry is required'),
 })
 
 const UserProfileForm: React.FC = () => {
@@ -133,6 +160,7 @@ const UserProfileForm: React.FC = () => {
     skills: '',
     jobExperience: [],
     education: [],
+    projects: [],
     linkedIn: '',
     profilePicture: '',
   }
@@ -144,7 +172,6 @@ const UserProfileForm: React.FC = () => {
     const content = editor.getText().trim()
     setIsAboutEmpty(content.length > 0)
   }
-  console.log(initialValues)
 
   return (
     <Formik
@@ -343,6 +370,51 @@ const UserProfileForm: React.FC = () => {
                 )}
               </FieldArray>
 
+              {/* Projects Section  */}
+
+              <FieldArray name="projects">
+                {({ push, remove, replace }) => (
+                  <Box display="flex" flexDirection="column" gap={1}>
+                    <Typography variant="subtitle1">Projects</Typography>
+                    {values.projects.map((projects: Projects, index: number) => {
+                      if (projects.isEditing) {
+                        return (
+                          <ProjectForm
+                            key={index}
+                            projects={projects}
+                            index={index}
+                            errorMessages={
+                              errors.projects ? (errors.projects as unknown as Projects[]) : []
+                            }
+                            onSubmit={v => {
+                              replace(index, v)
+                            }}
+                          />
+                        )
+                      }
+
+                      // Project Summary
+                      return (
+                        <ProjectSummary
+                          projects={projects}
+                          onEdit={() => replace(index, { ...projects, isEditing: true })}
+                          onDelete={() => remove(index)}
+                        />
+                      )
+                    })}
+                    <Button
+                      variant="contained"
+                      color="primary"
+                      onClick={() =>
+                        push({ title: '', description: '', images: [], isEditing: true })
+                      }
+                    >
+                      Add Project
+                    </Button>
+                  </Box>
+                )}
+              </FieldArray>
+
               <Button type="submit" variant="contained" color="primary">
                 Submit
               </Button>
@@ -360,6 +432,11 @@ interface EducationSummaryProps {
 
 interface EducationSummaryProps {
   education: Education
+  onEdit: () => void
+  onDelete: () => void
+}
+interface ProjectSummaryProps {
+  projects: Projects
   onEdit: () => void
   onDelete: () => void
 }
@@ -381,6 +458,13 @@ interface JobExperienceFormProps {
   onSubmit: (v: jobExperience) => void
   index: number
   errorMessages: jobExperience[]
+}
+
+interface ProjectFormProps {
+  projects: Projects
+  onSubmit: (v: Projects) => void
+  index: number
+  errorMessages: Projects[]
 }
 
 const EducationForm: React.FC<EducationFormProps> = ({
@@ -453,6 +537,108 @@ const EducationForm: React.FC<EducationFormProps> = ({
   </Box>
 )
 
+const ProjectForm: React.FC<ProjectFormProps> = ({
+  projects,
+  index: key,
+  onSubmit,
+  errorMessages,
+}) => (
+  <Box key={key} display="flex" flexDirection="column" gap={2}>
+    <Field name={`projects[${key}].title`}>
+      {({ field }: FieldProps) => (
+        <TextField
+          {...field}
+          label="Title"
+          variant="outlined"
+          fullWidth
+          error={Boolean(errorMessages[key]?.title)}
+          helperText={<ErrorMessage name={field.name} />}
+        />
+      )}
+    </Field>
+    <Field name={`projects[${key}].description`}>
+      {({ field }: FieldProps) => (
+        <TextField
+          {...field}
+          label="Description"
+          variant="outlined"
+          multiline
+          rows={4}
+          fullWidth
+          error={Boolean(errorMessages[key]?.description)}
+          helperText={<ErrorMessage name={field.name} />}
+        />
+      )}
+    </Field>
+    {/* <ImageUploadForm /> */}
+
+    <FieldArray name="images">
+      {({ push, remove, replace }) => (
+        <FormControl fullWidth variant="outlined">
+          <Field name={`projects[${key}].images`}>
+            <label htmlFor={`upload-${key}`}>
+              <Button variant="contained" component="span">
+                Upload Images
+              </Button>
+              <input
+                id={`upload-${key}`}
+                type="file"
+                multiple
+                hidden
+                onChange={event => console.log(event)}
+              />
+            </label>
+
+            {formik.errors.images && formik.touched.images ? (
+              Array.isArray(formik.errors.images) ? (
+                formik.errors.images.map((error, index) => (
+                  <Typography color="error" key={index}>
+                    {typeof error === 'string' ? error : 'Invalid file'}
+                  </Typography>
+                ))
+              ) : (
+                <Typography color="error">{formik.errors.images}</Typography>
+              )
+            ) : null}
+            <Grid container spacing={2} mt={2}>
+              {projects.images.map((preview, index: number) => (
+                <Grid item key={index}>
+                  <img
+                    src={preview}
+                    alt={`Preview ${index}`}
+                    style={{ width: 100, height: 100, objectFit: 'cover' }}
+                  />
+                  <Button
+                    variant="contained"
+                    color="secondary"
+                    onClick={() => {
+                      remove(index)
+                    }}
+                  >
+                    Remove
+                  </Button>
+                </Grid>
+              ))}
+            </Grid>
+          </Field>
+        </FormControl>
+      )}
+    </FieldArray>
+
+    <ErrorMessage name="images" />
+
+    <Button
+      type="submit"
+      variant="contained"
+      color="primary"
+      disabled={Boolean(errorMessages.length > 0)}
+      onClick={() => onSubmit({ ...projects, isEditing: false })}
+    >
+      Submit
+    </Button>
+  </Box>
+)
+
 const EducationSummary: React.FC<EducationSummaryProps> = ({ education, onEdit, onDelete }) => {
   return (
     <Paper elevation={2} sx={{ padding: 2, marginBottom: 2 }}>
@@ -463,6 +649,27 @@ const EducationSummary: React.FC<EducationSummaryProps> = ({ education, onEdit, 
           <Typography variant="body2" color="textSecondary">
             {education.fromYear} - {education.toYear}
           </Typography>
+        </Box>
+        <Box>
+          <IconButton color="primary" onClick={onEdit}>
+            <Edit />
+          </IconButton>
+          <IconButton color="secondary" onClick={onDelete}>
+            <Delete />
+          </IconButton>
+        </Box>
+      </Stack>
+    </Paper>
+  )
+}
+
+const ProjectSummary: React.FC<ProjectSummaryProps> = ({ projects, onEdit, onDelete }) => {
+  return (
+    <Paper elevation={2} sx={{ padding: 2, marginBottom: 2 }}>
+      <Stack direction="row" alignItems="center" justifyContent="space-between">
+        <Box>
+          <Typography variant="subtitle1">{projects.title}</Typography>
+          <Typography variant="body1">{projects.description}</Typography>
         </Box>
         <Box>
           <IconButton color="primary" onClick={onEdit}>
@@ -587,3 +794,93 @@ const UserProfilePage: React.FC = () => {
 }
 
 export default UserProfilePage
+
+interface FormValues {
+  images: File[]
+}
+
+const validationSchemaImageUploadForm = Yup.object({
+  images: Yup.array()
+    .of(Yup.mixed().required('A file is required'))
+    .min(1, 'At least one image is required')
+    .required('At least one image is required'),
+})
+
+const ImageUploadForm: React.FC = () => {
+  const [previews, setPreviews] = useState<string[]>([])
+  const formik = useFormik<FormValues>({
+    initialValues: {
+      images: [],
+    },
+    validationSchema: validationSchemaImageUploadForm,
+    onSubmit: values => {
+      console.log(values)
+    },
+  })
+
+  const handleFileChange = (
+    event: React.ChangeEvent<HTMLInputElement>,
+    push: (obj: any) => void
+  ) => {
+    const files = event.currentTarget.files
+    if (files) {
+      const fileArray = Array.from(files)
+      fileArray.forEach(file => push(file))
+
+      const previewUrls = fileArray.map(file => URL.createObjectURL(file))
+      setPreviews(previews.concat(previewUrls))
+    }
+  }
+  return (
+    <></>
+    // <FieldArray name="images">
+    //   {({ push, remove, replace }) => (
+    //     <FormControl fullWidth variant="outlined">
+    //       <Box>
+    //         <Button variant="contained" component="label">
+    //           Upload Images
+    //           <input
+    //             type="file"
+    //             multiple
+    //             hidden
+    //             onChange={event => handleFileChange(event, push)}
+    //           />
+    //         </Button>
+    //         {formik.errors.images && formik.touched.images ? (
+    //           Array.isArray(formik.errors.images) ? (
+    //             formik.errors.images.map((error, index) => (
+    //               <Typography color="error" key={index}>
+    //                 {typeof error === 'string' ? error : 'Invalid file'}
+    //               </Typography>
+    //             ))
+    //           ) : (
+    //             <Typography color="error">{formik.errors.images}</Typography>
+    //           )
+    //         ) : null}
+    //         <Grid container spacing={2} mt={2}>
+    //           {previews.map((preview, index) => (
+    //             <Grid item key={index}>
+    //               <img
+    //                 src={preview}
+    //                 alt={`Preview ${index}`}
+    //                 style={{ width: 100, height: 100, objectFit: 'cover' }}
+    //               />
+    //               <Button
+    //                 variant="contained"
+    //                 color="secondary"
+    //                 onClick={() => {
+    //                   remove(index)
+    //                   setPreviews(previews.filter((_, i) => i !== index))
+    //                 }}
+    //               >
+    //                 Remove
+    //               </Button>
+    //             </Grid>
+    //           ))}
+    //         </Grid>
+    //       </Box>
+    //     </FormControl>
+    //   )}
+    // </FieldArray>
+  )
+}
